@@ -23,6 +23,8 @@ func run() error {
 	cli := struct {
 		Selector string `arg:"" help:"the CSS selector to run"`
 		In       string `arg:"" help:"file to read input from. If unset, reads from stdin" optional:""`
+		Number   int    `help:"Print only the n-th match" short:"n"`
+		Text     bool   `help:"Recursively print the inner text instead of HTML"`
 	}{}
 	kong.Parse(&cli)
 
@@ -41,11 +43,39 @@ func run() error {
 	}
 	nodes := cascadia.QueryAll(doc, selector)
 	buf := bytes.NewBuffer(nil)
-	for _, n := range nodes {
-		if err := html.Render(buf, n); err != nil {
-			return err
-		}
+	if cli.Number != 0 && cli.Number > len(nodes) {
+		return fmt.Errorf("wanted match %d, but only got %d matches", cli.Number, len(nodes))
 	}
-	fmt.Println(string(gohtml.FormatBytes(buf.Bytes())))
+	if cli.Number > 0 {
+		nodes = []*html.Node{nodes[cli.Number-1]}
+	}
+	if cli.Text {
+		for _, n := range nodes {
+			buf := &bytes.Buffer{}
+			walk(n, func(node *html.Node) {
+				if node.Type == html.TextNode {
+					buf.WriteString(node.Data)
+				}
+			})
+			fmt.Println(buf.String())
+		}
+	} else {
+		for _, n := range nodes {
+			if err := html.Render(buf, n); err != nil {
+				return err
+			}
+		}
+		fmt.Println(string(gohtml.FormatBytes(buf.Bytes())))
+	}
 	return nil
+}
+
+func walk(n *html.Node, visit func(node *html.Node)) {
+	visit(n)
+	if n.FirstChild == nil {
+		return
+	}
+	for n = n.FirstChild; n != nil; n = n.NextSibling {
+		walk(n, visit)
+	}
 }
