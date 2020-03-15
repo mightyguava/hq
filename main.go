@@ -30,7 +30,7 @@ func run() error {
 	cli := struct {
 		Selector string `arg:"" help:"the CSS selector to run"`
 		In       string `arg:"" help:"file to read input from. If unset, reads from stdin" optional:""`
-		Number   int    `help:"Print only the n-th match" short:"n"`
+		Number   int    `help:"Print only the n-th match, starting at 1" short:"n"`
 		Text     bool   `help:"Recursively print the inner text instead of HTML"`
 	}{}
 	kong.Parse(&cli)
