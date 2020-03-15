@@ -36,7 +36,7 @@ func run() error {
 	kong.Parse(&cli)
 
 	var in io.Reader
-	if cli.In == "" {
+	if cli.In != "" {
 		f, err := os.Open(cli.In)
 		if err != nil {
 			return err
